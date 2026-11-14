@@ -201,6 +201,10 @@ python tests/test_smoke.py
 
 CI 会在 Python 3.11 / 3.12 / 3.13 上跑同一套测试。
 
+## 致谢
+
+本项目在 DeepSeek 模型辅助下完成：代码、测试、文档和网页界面由 AI 协作生成，作者负责需求定义、信源与话题设计、审阅和验证。详见 [CONTRIBUTORS.md](CONTRIBUTORS.md)。
+
 ## License
 
 MIT
