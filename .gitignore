@@ -1,0 +1,18 @@
+# 运行数据，不要提交
+data/
+reports/
+*.db
+*.sqlite3
+.test-tmp/
+.wewe-data/
+
+# 本地配置：feed 地址里带 token
+sources.toml
+*.local.toml
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/

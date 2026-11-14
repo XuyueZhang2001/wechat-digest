@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>示例 Feed</title>
+    <link>https://example.com</link>
+    <description>仅用于测试解析器</description>
+    <item>
+      <title>测试文章一</title>
+      <link>https://example.com/a1</link>
+      <guid>ex-1</guid>
+      <pubDate>Wed, 12 Nov 2026 10:00:00 +0800</pubDate>
+      <dc:creator>作者甲</dc:creator>
+      <content:encoded><![CDATA[
+        <p>第一段内容。</p>
+        <p>第二段提到黄仁勋卸任。</p>
+        <script>alert('should be dropped')</script>
+      ]]></content:encoded>
+    </item>
+    <item>
+      <title>测试文章二</title>
+      <link>https://example.com/a2</link>
+      <guid>ex-2</guid>
+      <pubDate>2026-11-11T09:30:00Z</pubDate>
+      <description><![CDATA[<div>只有描述字段。</div>]]></description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,80 @@
+# 信源示例。运行 `python run.py init` 会复制成 sources.toml。
+#
+# kind 有两种：
+#   rss       —— 免费。feed 填 RSS 地址。
+#   dataxapi  —— 付费接口。不填 feed，填 account（公众号名称或 gh_/wxid_ 编号），
+#                并在 .env 里配 DATAXAPI_API_KEY。
+#
+# 公众号本身没有公开 RSS。免费号列表见 https://wechat2rss.xlab.app/list/all.html
+# 没被收录的号走 dataxapi，列表 $0.02/次、正文 $0.02/篇。
+#
+# 默认只启用「机器之心」，它用的是公开免费源，clone 下来就能抓。
+# 其余信源填好地址或账号后，把 enabled 改成 true。
+
+[[sources]]
+id = "jiqizhixin"
+name = "机器之心"
+kind = "rss"
+feed = "https://wechat2rss.xlab.app/feed/51e92aad2728acdd1fda7314be32b16639353001.xml"
+weight = 1.2
+angle = "AI 技术与产业"
+enabled = true
+
+[[sources]]
+id = "xinzhiyuan"
+name = "新智元"
+kind = "rss"
+feed = "https://wechat2rss.xlab.app/feed/ede30346413ea70dbef5d485ea5cbb95cca446e7.xml"
+weight = 1.0
+angle = "AI 技术与产业"
+enabled = false
+
+[[sources]]
+id = "datawhale"
+name = "DataWhale"
+kind = "rss"
+feed = "https://wechat2rss.xlab.app/feed/4d620d988cb21cfeefd2263207221f0dc70df9ff.xml"
+weight = 0.8
+angle = "开源与教程"
+enabled = false
+
+# 下面三个是付费接口示例，需要 DATAXAPI_API_KEY。
+[[sources]]
+id = "kr36"
+name = "36氪"
+kind = "dataxapi"
+account = "36氪"
+feed = ""
+weight = 1.1
+angle = "商业与科技新闻"
+enabled = false
+
+[[sources]]
+id = "huxiu"
+name = "虎嗅"
+kind = "dataxapi"
+account = "虎嗅APP"
+feed = ""
+weight = 1.1
+angle = "科技商业评论"
+enabled = false
+
+[[sources]]
+id = "latepost"
+name = "晚点LatePost"
+kind = "dataxapi"
+account = "晚点LatePost"
+feed = ""
+weight = 1.3
+angle = "商业深度"
+enabled = false
+
+# 自己的源：填 feed 或 account，再打开。
+[[sources]]
+id = "custom1"
+name = "自定义信源"
+kind = "rss"
+feed = ""
+weight = 1.0
+angle = ""
+enabled = false

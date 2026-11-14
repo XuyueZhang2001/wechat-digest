@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>信源观察台</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --line: #e3e3df;
+    --text: #1d1d1b;
+    --muted: #77776f;
+    --accent: #2f6f4f;
+    --accent-weak: #e7f1eb;
+    --danger: #a33a2c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.65 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 24px;
+    padding: 18px 28px; background: var(--card);
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5;
+  }
+  h1 { font-size: 17px; margin: 0; letter-spacing: .5px; }
+  nav { display: flex; gap: 6px; }
+  nav button {
+    border: none; background: none; padding: 6px 12px; border-radius: 6px;
+    cursor: pointer; color: var(--muted); font-size: 14px;
+  }
+  nav button.active { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 18px;
+  }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 12px; }
+  .on { background: var(--accent-weak); color: var(--accent); }
+  .off { background: #efefec; color: var(--muted); }
+  .muted { color: var(--muted); font-size: 13px; }
+  button.action {
+    border: 1px solid var(--line); background: var(--card); border-radius: 6px;
+    padding: 4px 10px; cursor: pointer; font-size: 13px;
+  }
+  button.action:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary {
+    background: var(--accent); color: #fff; border: none; border-radius: 7px;
+    padding: 9px 18px; cursor: pointer; font-size: 14px;
+  }
+  button.primary:disabled { opacity: .5; cursor: default; }
+  button.danger { color: var(--danger); }
+  form.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  form.grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  form.grid label.full { grid-column: 1 / -1; }
+  input, select, textarea {
+    font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 6px; background: #fff; color: var(--text);
+  }
+  textarea { resize: vertical; min-height: 64px; }
+  details.card > summary { cursor: pointer; font-weight: 600; }
+  .topic {
+    display: flex; justify-content: space-between; gap: 16px;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+  }
+  .topic:last-child { border-bottom: none; }
+  .topic h3 { margin: 0 0 4px; font-size: 15px; }
+  .log {
+    background: #16181a; color: #d7d7d2; border-radius: 8px; padding: 14px 16px;
+    font: 13px/1.6 Consolas, "SF Mono", monospace; white-space: pre-wrap;
+    max-height: 260px; overflow: auto; margin: 16px 0;
+  }
+  .report { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 26px 26px; }
+  .report h1 { font-size: 22px; margin: 20px 0 10px; }
+  .report h2 { font-size: 18px; margin: 26px 0 10px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  .report h3 { font-size: 15px; margin: 18px 0 8px; }
+  .report table { margin: 10px 0 16px; }
+  .report th, .report td { border: 1px solid var(--line); padding: 6px 9px; }
+  .report blockquote { margin: 10px 0; padding: 8px 14px; background: #faf9f6; border-left: 3px solid var(--line); color: #555; }
+  .report code { background: #f0f0ec; padding: 1px 5px; border-radius: 4px; }
+  .report a { color: var(--accent); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>信源观察台</h1>
+  <nav>
+    <button data-tab="sources" class="active">信源</button>
+    <button data-tab="topics">话题</button>
+    <button data-tab="run">运行</button>
+  </nav>
+  <span class="muted" id="status"></span>
+</header>
+
+<main>
+  <section id="tab-sources">
+    <div class="toolbar">
+      <button class="primary" id="btn-ingest">抓取最新</button>
+      <span class="muted">按当前启用信源抓取，付费源每次约 $0.02</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>信源</th><th>方式</th><th>篇数</th><th>最近</th><th>状态</th><th></th></tr></thead>
+        <tbody id="source-body"></tbody>
+      </table>
+    </div>
+    <details class="card" id="source-details">
+      <summary>添加 / 编辑信源</summary>
+      <form class="grid" id="source-form" style="margin-top:14px">
+        <input type="hidden" name="id">
+        <label>名称<input name="name" required placeholder="机器之心"></label>
+        <label>方式
+          <select name="kind">
+            <option value="rss">RSS（免费）</option>
+            <option value="dataxapi">付费接口</option>
+          </select>
+        </label>
+        <label class="full">RSS 地址<input name="feed" placeholder="https://...xml，kind=rss 时必填"></label>
+        <label>公众号名称或编号<input name="account" placeholder="36氪 或 gh_xxx，kind=dataxapi 时填"></label>
+        <label>权重<input name="weight" type="number" step="0.1" value="1.0"></label>
+        <label class="full">分类<input name="angle" placeholder="AI 技术与产业"></label>
+        <div class="full"><button class="primary" type="submit">保存信源</button></div>
+      </form>
+    </details>
+  </section>
+
+  <section id="tab-topics" class="hidden">
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:6px">
+        <strong>已保存话题</strong>
+      </div>
+      <div id="topic-list"></div>
+    </div>
+    <details class="card" id="topic-details" open>
+      <summary>新建 / 编辑话题</summary>
+      <form class="grid" id="topic-form" style="margin-top:14px">
+        <input type="hidden" name="file">
+        <label class="full">话题名称<input name="name" required placeholder="Fable 5.2 对具身智能的影响"></label>
+        <label class="full">一句话说明<textarea name="description" placeholder="给模型看的背景：涉及谁、什么时间、核心争点"></textarea></label>
+        <label>主体词（逗号分隔）<input name="subject" placeholder="Fable 5.2, Fable5.2, Claude 5.2"></label>
+        <label>动作 / 角度词<input name="angle" placeholder="具身, 机器人, 物理世界"></label>
+        <label class="full">高级：多套条件（每行一套，组间用 |，词用逗号）
+          <textarea name="sets" placeholder="黄仁勋, Jensen Huang | 离职, 辞职&#10;英伟达, NVIDIA | 失去创始人, 后创始人时代"></textarea>
+          <button type="button" class="action" id="btn-suggest" style="align-self:flex-start;margin-top:6px">自动生成关键词</button>
+        </label>
+        <label>时间窗（天）<input name="window_days" type="number" value="90"></label>
+        <div class="full"><button class="primary" type="submit">保存话题</button></div>
+      </form>
+    </details>
+  </section>
+
+  <section id="tab-run" class="hidden">
+    <div class="card">
+      <form class="grid" id="run-form">
+        <label class="full">选择话题<select name="file" id="run-file" required></select></label>
+        <label>最多补全文（篇）<input name="enrich_top" type="number" value="6"></label>
+        <label>本次数据费上限（美元，0 不限）<input name="max_cost" type="number" step="0.01" value="0.12"></label>
+        <label class="full" style="flex-direction:row;align-items:center;gap:8px">
+          <input type="checkbox" name="no_llm" style="width:auto"> 仅检索（不调模型、不补全文，零花费）
+        </label>
+        <div class="full"><button class="primary" type="submit" id="run-btn">开始分析</button></div>
+      </form>
+    </div>
+    <pre class="log" id="job-log">等待运行……</pre>
+    <div class="report hidden" id="report"></div>
+  </section>
+</main>
+
+<script>
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const state = { sources: [], events: [], currentJob: null, timer: null };
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    ...options
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+
+function toast(message) {
+  const el = $("#status");
+  el.textContent = message;
+  setTimeout(() => { if (el.textContent === message) el.textContent = ""; }, 4000);
+}
+
+function switchTab(name) {
+  $$("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  ["sources", "topics", "run"].forEach(tab => {
+    $(`#tab-${tab}`).classList.toggle("hidden", tab !== name);
+  });
+}
+
+function renderSources() {
+  const body = $("#source-body");
+  if (!state.sources.length) {
+    body.innerHTML = `<tr><td colspan="6" class="muted">还没有信源，先添加一个。</td></tr>`;
+    return;
+  }
+  body.innerHTML = state.sources.map(s => `
+    <tr>
+      <td><strong>${esc(s.name)}</strong><div class="muted">${esc(s.angle || "")}</div></td>
+      <td>${s.kind === "rss" ? "RSS" : "付费"}</td>
+      <td>${s.count}</td>
+      <td>${esc(s.latest || "—")}</td>
+      <td><span class="pill ${s.enabled ? "on" : "off"}">${s.enabled ? "启用" : "停用"}</span></td>
+      <td style="white-space:nowrap">
+        <button class="action" data-toggle="${esc(s.id)}">${s.enabled ? "停用" : "启用"}</button>
+        <button class="action" data-edit="${esc(s.id)}">编辑</button>
+        <button class="action danger" data-del="${esc(s.id)}">删除</button>
+      </td>
+    </tr>`).join("");
+}
+
+function renderTopics() {
+  const list = $("#topic-list");
+  if (!state.events.length) {
+    list.innerHTML = `<p class="muted">还没有话题。</p>`;
+  } else {
+    list.innerHTML = state.events.map(e => `
+      <div class="topic">
+        <div>
+          <h3>${esc(e.name)}</h3>
+          <div class="muted">${esc(e.file)} · ${e.window_days} 天 · ${e.sets.length} 套条件</div>
+        </div>
+        <div style="white-space:nowrap">
+          <button class="action" data-run="${esc(e.file)}">运行</button>
+          <button class="action" data-edit-topic="${esc(e.file)}">编辑</button>
+          <button class="action danger" data-del-topic="${esc(e.file)}">删除</button>
+        </div>
+      </div>`).join("");
+  }
+  $("#run-file").innerHTML = state.events
+    .map(e => `<option value="${esc(e.file)}">${esc(e.name)}</option>`).join("");
+}
+
+async function refresh() {
+  const data = await api("/api/state");
+  state.sources = data.sources;
+  state.events = data.events;
+  renderSources();
+  renderTopics();
+}
+
+async function toggleSource(id) {
+  await api("/api/sources/toggle", { method: "POST", body: JSON.stringify({ id }) });
+  await refresh();
+}
+
+async function deleteSource(id) {
+  if (!confirm("删除这个信源？已抓到的文章不会删。")) return;
+  await api(`/api/sources?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  await refresh();
+}
+
+$("#source-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.target;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  payload.weight = Number(payload.weight || 1);
+  await api("/api/sources", { method: "POST", body: JSON.stringify(payload) });
+  form.reset();
+  form.elements["id"].value = "";
+  await refresh();
+  toast("信源已保存");
+});
+
+$("#topic-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.target;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  payload.window_days = Number(payload.window_days || 90);
+  await api("/api/events", { method: "POST", body: JSON.stringify(payload) });
+  form.reset();
+  form.elements["file"].value = "";
+  await refresh();
+  toast("话题已保存");
+  switchTab("topics");
+});
+
+function setsToText(sets) {
+  return (sets || []).map(groupSet => groupSet.map(g => g.join(", ")).join(" | ")).join("\n");
+}
+
+function fillTopic(file) {
+  const topic = state.events.find(e => e.file === file);
+  if (!topic) return;
+  const form = $("#topic-form");
+  form.elements["file"].value = topic.file;
+  form.elements["name"].value = topic.name;
+  form.elements["description"].value = topic.description || "";
+  form.elements["subject"].value = "";
+  form.elements["angle"].value = "";
+  form.elements["sets"].value = setsToText(topic.sets);
+  form.elements["window_days"].value = topic.window_days;
+  switchTab("topics");
+  form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function deleteTopic(file) {
+  if (!confirm("删除这个话题定义？已有报告不受影响。")) return;
+  await api(`/api/events?file=${encodeURIComponent(file)}`, { method: "DELETE" });
+  await refresh();
+}
+
+document.addEventListener("click", async event => {
+  const target = event.target;
+  if (target.dataset.toggle) return toggleSource(target.dataset.toggle);
+  if (target.dataset.del) return deleteSource(target.dataset.del);
+  if (target.dataset.edit) {
+    const source = state.sources.find(s => s.id === target.dataset.edit);
+    if (!source) return;
+    const form = $("#source-form");
+    form.elements["id"].value = source.id;
+    form.elements["name"].value = source.name;
+    form.elements["kind"].value = source.kind;
+    form.elements["feed"].value = source.feed;
+    form.elements["account"].value = source.account;
+    form.elements["weight"].value = source.weight;
+    form.elements["angle"].value = source.angle;
+    $("#source-details").open = true;
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  if (target.dataset.editTopic) return fillTopic(target.dataset.editTopic);
+  if (target.dataset.delTopic) return deleteTopic(target.dataset.delTopic);
+  if (target.dataset.run) {
+    $("#run-file").value = target.dataset.run;
+    switchTab("run");
+  }
+});
+
+function pollJob(jobId, options = {}) {
+  clearInterval(state.timer);
+  const log = $("#job-log");
+  const report = $("#report");
+  report.classList.add("hidden");
+  report.innerHTML = "";
+  $("#run-btn").disabled = true;
+
+  state.timer = setInterval(async () => {
+    try {
+      const job = await api(`/api/jobs/${jobId}`);
+      log.textContent = job.log.join("\n") || "运行中……";
+      log.scrollTop = log.scrollHeight;
+      if (job.status === "running") return;
+
+      clearInterval(state.timer);
+      $("#run-btn").disabled = false;
+      if (job.status === "error") {
+        toast("运行失败：" + job.error);
+        return;
+      }
+      if (job.report_html) {
+        report.innerHTML = job.report_html;
+        report.classList.remove("hidden");
+        toast(`完成：${job.report_file}｜数据费 $${job.spent.toFixed(2)}`);
+      } else {
+        toast("抓取完成");
+        await refresh();
+      }
+    } catch (err) {
+      clearInterval(state.timer);
+      $("#run-btn").disabled = false;
+      toast("轮询失败：" + err.message);
+    }
+  }, 900);
+}
+
+$("#btn-suggest").addEventListener("click", async () => {
+  const form = $("#topic-form");
+  const name = form.elements["name"].value.trim();
+  const description = form.elements["description"].value.trim();
+  if (!name) {
+    toast("先填话题名称");
+    form.elements["name"].focus();
+    return;
+  }
+  const button = $("#btn-suggest");
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = "生成中…";
+  try {
+    const data = await api("/api/suggest", {
+      method: "POST",
+      body: JSON.stringify({ name, description })
+    });
+    form.elements["sets"].value = setsToText(data.sets);
+    toast("关键词已生成，可以手动调整");
+  } catch (err) {
+    toast("生成失败：" + err.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
+});
+
+$("#run-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.target;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  payload.enrich_top = Number(payload.enrich_top || 6);
+  payload.max_cost = Number(payload.max_cost || 0);
+  payload.no_llm = form.no_llm.checked;
+  $("#job-log").textContent = "已提交，等待日志……";
+  try {
+    const { job } = await api("/api/run", { method: "POST", body: JSON.stringify(payload) });
+    pollJob(job);
+  } catch (err) {
+    toast("提交失败：" + err.message);
+  }
+});
+
+$("#btn-ingest").addEventListener("click", async () => {
+  switchTab("sources");
+  $("#job-log").textContent = "开始抓取……";
+  try {
+    const { job } = await api("/api/ingest", { method: "POST", body: JSON.stringify({ pages: 1 }) });
+    pollJob(job);
+  } catch (err) {
+    toast("抓取失败：" + err.message);
+  }
+});
+
+$$("nav button").forEach(button => {
+  button.addEventListener("click", () => switchTab(button.dataset.tab));
+});
+
+refresh().catch(err => toast("加载失败：" + err.message));
+</script>
+</body>
+</html>
