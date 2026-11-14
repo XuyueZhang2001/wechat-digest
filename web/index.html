@@ -148,9 +148,9 @@
         <label class="full">一句话说明<textarea name="description" placeholder="给模型看的背景：涉及谁、什么时间、核心争点"></textarea></label>
         <label>主体词（逗号分隔）<input name="subject" placeholder="Fable 5.2, Fable5.2, Claude 5.2"></label>
         <label>动作 / 角度词<input name="angle" placeholder="具身, 机器人, 物理世界"></label>
-        <label class="full">高级：多套条件（每行一套，组间用 |，词用逗号）
+        <label class="full">高级：多套条件（填了这里就忽略上面的主体/角度词）
           <textarea name="sets" placeholder="黄仁勋, Jensen Huang | 离职, 辞职&#10;英伟达, NVIDIA | 失去创始人, 后创始人时代"></textarea>
-          <button type="button" class="action" id="btn-suggest" style="align-self:flex-start;margin-top:6px">自动生成关键词</button>
+          <button type="button" class="action" id="btn-suggest" style="align-self:flex-start;margin-top:6px">自动捕捉主体 / 角度词</button>
         </label>
         <label>时间窗（天）<input name="window_days" type="number" value="90"></label>
         <div class="full"><button class="primary" type="submit">保存话题</button></div>
@@ -308,8 +308,9 @@ function fillTopic(file) {
   form.elements["file"].value = topic.file;
   form.elements["name"].value = topic.name;
   form.elements["description"].value = topic.description || "";
-  form.elements["subject"].value = "";
-  form.elements["angle"].value = "";
+  const first = topic.sets[0] || [];
+  form.elements["subject"].value = (first[0] || []).join(", ");
+  form.elements["angle"].value = (first[1] || []).join(", ");
   form.elements["sets"].value = setsToText(topic.sets);
   form.elements["window_days"].value = topic.window_days;
   switchTab("topics");
@@ -405,7 +406,9 @@ $("#btn-suggest").addEventListener("click", async () => {
       body: JSON.stringify({ name, description })
     });
     form.elements["sets"].value = setsToText(data.sets);
-    toast("关键词已生成，可以手动调整");
+    form.elements["subject"].value = (data.subject || []).join(", ");
+    form.elements["angle"].value = (data.angle || []).join(", ");
+    toast("已捕捉主体词和角度词，可手动调整");
   } catch (err) {
     toast("生成失败：" + err.message);
   } finally {

@@ -326,6 +326,8 @@ def test_suggest_keywords() -> None:
     result = suggest_keywords(FakeKeywordLLM(), "Fable 5.2 对具身智能的影响", "说明")
     assert len(result["sets"]) == 2
     assert result["sets"][0][0] == ["Fable 5.2", "Fable5.2"]
+    assert result["subject"] == ["Fable 5.2", "Fable5.2"]
+    assert result["angle"] == ["具身", "机器人"]
 
     object_shape = normalize(
         {"sets": [{"name": "事件", "groups": [["甲方"], ["乙方"]]}]}

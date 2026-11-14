@@ -379,7 +379,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:  # noqa: BLE001 - 回显给界面
                 self._json({"error": str(exc)}, 500)
                 return
-            self._json({"ok": True, "sets": result["sets"]})
+            self._json(
+                {
+                    "ok": True,
+                    "sets": result["sets"],
+                    "subject": result["subject"],
+                    "angle": result["angle"],
+                }
+            )
             return
 
         if path == "/api/run":

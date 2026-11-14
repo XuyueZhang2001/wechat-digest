@@ -24,6 +24,16 @@ def _clean_terms(values) -> list[str]:
     return terms
 
 
+def _dedupe(items, limit: int = 12) -> list[str]:
+    out: list[str] = []
+    for item in items:
+        if item and item not in out:
+            out.append(item)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def normalize(data: dict) -> dict:
     sets: list[list[list[str]]] = []
     for raw_set in data.get("sets") or []:
@@ -45,7 +55,11 @@ def normalize(data: dict) -> dict:
             break
     if not sets:
         raise ValueError("模型没有生成有效的关键词组，请补一句更具体的话题说明")
-    return {"sets": sets}
+
+    # 简单框只展示第一套（最核心的）条件，完整多套仍写进高级框。
+    subjects = _dedupe(list(sets[0][0]))
+    angles = _dedupe([term for group in sets[0][1:] for term in group])
+    return {"sets": sets, "subject": subjects, "angle": angles}
 
 
 def suggest_keywords(llm: LLM, name: str, description: str) -> dict:
