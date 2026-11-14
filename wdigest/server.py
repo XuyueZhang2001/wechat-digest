@@ -107,6 +107,10 @@ def _state() -> dict:
                 "weight": source.weight,
                 "angle": source.angle,
                 "enabled": source.enabled,
+                "configured": bool(
+                    (source.kind == "rss" and source.feed)
+                    or (source.kind == "dataxapi" and source.account)
+                ),
                 "count": row.get("n", 0),
                 "latest": (row.get("latest") or "")[:10],
             }
@@ -120,7 +124,7 @@ def _state() -> dict:
 
 
 def _parse_groups(text: str) -> list[str]:
-    return [term.strip() for term in text.split(",") if term.strip()]
+    return [term.strip() for term in text.split(",") if len(term.strip()) >= 2]
 
 
 def _parse_sets(text: str) -> list[list[list[str]]]:
@@ -153,6 +157,7 @@ def _run_job(job: Job, body: dict) -> None:
             top_n=int(body.get("top", 40)),
             api_client=client,
             enrich_top=int(body.get("enrich_top", 6)),
+            min_score=float(body.get("min_score", 0.6) or 0.6),
             max_cost=float(body.get("max_cost", 0) or 0),
             log=job.line,
         )
@@ -302,17 +307,49 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/events":
-            sets = body.get("sets") or []
+            raw_sets = body.get("sets")
+            if isinstance(raw_sets, str):
+                # 表单提交的是文本，必须按行/组解析，不能当数组遍历。
+                sets = _parse_sets(raw_sets)
+            elif isinstance(raw_sets, list):
+                sets = raw_sets
+            else:
+                sets = []
+
             if not sets:
                 subject = _parse_groups(str(body.get("subject") or ""))
                 angle = _parse_groups(str(body.get("angle") or ""))
                 if subject or angle:
                     sets = [[subject, angle]] if subject and angle else [[subject or angle]]
-            sets = [[g for g in group_set if g] for group_set in sets]
-            sets = [group_set for group_set in sets if group_set]
-            if not sets:
-                self._json({"error": "至少填一组关键词"}, 400)
+
+            normalized: list[list[list[str]]] = []
+            for group_set in sets:
+                if not isinstance(group_set, list):
+                    continue
+                groups: list[list[str]] = []
+                for group in group_set:
+                    if isinstance(group, str):
+                        group = [group]
+                    if not isinstance(group, list):
+                        continue
+                    terms = [str(term).strip() for term in group if len(str(term).strip()) >= 2]
+                    if terms:
+                        groups.append(terms)
+                if groups:
+                    normalized.append(groups)
+            sets = normalized
+
+            flat = [term for group_set in sets for group in group_set for term in group]
+            if not sets or all(len(term) <= 1 for term in flat):
+                self._json(
+                    {"error": "关键词太短。每个词至少两个字，格式是「主体词, 别名 | 角度词」"},
+                    400,
+                )
                 return
+            if len(flat) > 60:
+                self._json({"error": "关键词太多，建议每套 2-3 组、每组不超过 10 个词"}, 400)
+                return
+
             file_name = str(body.get("file") or "").strip()
             if not file_name:
                 file_name = f"ui-{int(time.time())}.toml"

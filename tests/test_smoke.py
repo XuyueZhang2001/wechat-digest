@@ -344,6 +344,15 @@ def test_dotenv_tolerates_non_utf8(tmp: Path) -> None:
     assert os.environ.get("TEST_GBK_KEY") == "abc123"
 
 
+def test_parse_sets_from_form() -> None:
+    from wdigest.server import _parse_sets
+
+    sets = _parse_sets("OpenAI, Open AI | 解散, 裁撤\n具身智能 | 影响, 路线")
+    assert sets[0][0] == ["OpenAI", "Open AI"]
+    assert sets[0][1] == ["解散", "裁撤"]
+    assert len(sets) == 2
+
+
 def test_config_loaders() -> None:
     sources = load_sources(ROOT / "sources.example.toml")
     assert len(sources) >= 6
@@ -367,6 +376,7 @@ def main() -> int:
     test_toml_roundtrip(tmp_root)
     test_suggest_keywords()
     test_dotenv_tolerates_non_utf8(tmp_root)
+    test_parse_sets_from_form()
     store = Store(tmp_root / "test.db")
     try:
         seed(store)

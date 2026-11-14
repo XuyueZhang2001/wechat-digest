@@ -36,6 +36,12 @@ def _src(names: list[str]) -> str:
     return "、".join(names) if names else "—"
 
 
+def _is_configured(source: Source) -> bool:
+    if source.kind == "dataxapi":
+        return bool(source.account)
+    return bool(source.feed)
+
+
 def _bullets(items: list[str]) -> list[str]:
     return [f"- {item}" for item in items] if items else ["- （无）"]
 
@@ -51,11 +57,15 @@ def render(bundle: Bundle, sources: list[Source]) -> str:
         lines.append("> **演示数据**：报告中包含由 `seed-demo` 生成的虚构信源文章，"
                      "仅用于验证流程，不是真实报道，也不代表任何真实媒体的观点。")
         lines.append("")
-    lines.append(
+    enabled = [source for source in sources if source.enabled]
+    missing = [source for source in enabled if not _is_configured(source)]
+    header = (
         f"> 生成时间 {now} ｜ 命中文章 {len(bundle.candidates)} 篇 ｜ "
-        f"已分析 {len(bundle.extracts)} 篇 ｜ "
-        f"配置信源 {len(sources)} 个，启用 {sum(1 for s in sources if s.enabled)} 个"
+        f"已分析 {len(bundle.extracts)} 篇 ｜ 配置信源 {len(sources)} 个，启用 {len(enabled)} 个"
     )
+    if missing:
+        header += f"（{len(missing)} 个未配置）"
+    lines.append(header)
     if not bundle.llm_enabled:
         lines.append("")
         lines.append("> ⚠️ 未检测到 LLM API Key，本次仅输出检索结果，未做判断抽取与汇总。")
@@ -192,6 +202,7 @@ def render(bundle: Bundle, sources: list[Source]) -> str:
     lines.append("| 信源 | 命中篇数 | 状态 |")
     lines.append("| --- | --- | --- |")
     enabled_map = {source.name: source.enabled for source in sources}
+    configured_map = {source.name: _is_configured(source) for source in sources}
     names = [source.name for source in sources]
     if bundle.demo:
         names = [name for name in names if counts.get(name)]
@@ -203,7 +214,9 @@ def render(bundle: Bundle, sources: list[Source]) -> str:
             names.append(candidate.row["source_name"])
     for name in names:
         n = counts.get(name, 0)
-        if enabled_map.get(name) is False:
+        if not configured_map.get(name, True):
+            status = "未配置"
+        elif enabled_map.get(name) is False:
             status = "未启用"
         elif n:
             status = "已覆盖"
