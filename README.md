@@ -28,7 +28,7 @@ cd wechat-digest
 python run.py init          # 生成 sources.toml 和 .env
 ```
 
-编辑 `.env`，填入模型 Key：
+编辑 `.env`，填入模型 Key（下一节有获取步骤）：
 
 ```
 WDIGEST_API_KEY=sk-...
@@ -54,6 +54,43 @@ python run.py run --event events/huang-renxun-lizhi.toml --no-llm
 # 配置 Key 后跑完整流程
 python run.py run --event events/huang-renxun-lizhi.toml
 ```
+
+## 配置模型 Key（以 DeepSeek 为例）
+
+抽取和汇总都走 OpenAI 兼容接口，默认接 DeepSeek。
+
+**1. 注册并充值**
+
+打开 https://platform.deepseek.com ，注册登录。DeepSeek 是预付费，余额为 0 时调用会失败，先在「充值」里充一点。
+
+**2. 创建 API Key**
+
+左侧「API Keys」→「创建 API key」→ 起个名字（比如 `wechat-digest`）→ 复制。
+
+Key 只在创建时显示一次，格式是 `sk-` 开头。关了窗口就只能重建。
+
+**3. 写进 `.env`**
+
+`python run.py init` 已经生成了 `.env`，打开填：
+
+```
+WDIGEST_API_KEY=sk-你复制的key
+WDIGEST_BASE_URL=https://api.deepseek.com/v1
+WDIGEST_MODEL=deepseek-chat
+```
+
+等号后面直接粘贴，不要加引号。`.env` 已被 `.gitignore` 忽略，不会提交。
+
+**4. 验证**
+
+```bash
+python run.py run --event events/huang-renxun-lizhi.toml
+```
+
+- 报 `HTTP 401`：Key 错了或已失效
+- 提示「未配置 API key」：`.env` 没被读到，确认文件名是 `.env` 而不是 `.env.txt`
+
+**换别家模型**：只要是 OpenAI 兼容接口，改 `WDIGEST_BASE_URL` 和 `WDIGEST_MODEL` 两行即可，代码不用动。
 
 ## 配置信源
 
@@ -83,11 +120,64 @@ enabled = true
 
 `account` 写公众号名称即可，首次会自动搜索并缓存编号；也可以直接填 `gh_` 或 `wxid_` 编号。
 
-**公众号没有公开 RSS。** 截至 2026 年 11 月：
+**公众号没有公开 RSS。** 按有没有被免费列表收录，分两条路。
 
-- [Wechat2RSS 公开服务](https://wechat2rss.xlab.app/list/all.html)：免费收录 300+ 个号，机器之心、新智元、DataWhale 都在里面。
-- DataXAPI：任意公众号，不用微信号、不用扫码，列表 $0.02/次、正文 $0.02/篇。
-- **wewe-rss 已归档**（2026-05），依赖的闭源中继已 502，不要再用。
+### 找 Wechat2RSS 的 feed（免费）
+
+1. 打开完整列表：https://wechat2rss.xlab.app/list/all.html
+2. `Ctrl+F` 搜公众号名，比如「机器之心」
+3. 点名字后面的链接，浏览器地址栏就是 feed，形如 `https://wechat2rss.xlab.app/feed/51e92aad...xml`
+4. 复制进 `sources.toml`：`kind = "rss"`，`feed = "上面那串"`，`enabled = true`
+5. 验证：浏览器打开该地址应看到 XML；或在项目里跑 `python run.py ingest`
+
+列表只覆盖 300+ 个号，且只保留最近的文章。没收录的号往下看。
+
+### 付费信源（DataXAPI）
+
+适合没被免费列表收录的号，比如 36氪、虎嗅、晚点。
+
+**1. 注册并充值**
+
+打开 https://dataxapi.com ，注册后充值。按次计费：列表 $0.02/次，正文 $0.02/篇。
+
+**2. 创建 Key**
+
+控制台「API Keys」新建，格式是 `dx_` 开头。
+
+**3. 写进 `.env`**
+
+```
+DATAXAPI_API_KEY=dx_你复制的key
+```
+
+**4. 加信源**
+
+```toml
+[[sources]]
+id = "kr36"
+name = "36氪"
+kind = "dataxapi"
+account = "36氪"
+weight = 1.1
+angle = "商业与科技新闻"
+enabled = true
+```
+
+**5. 抓取**
+
+```bash
+python run.py ingest
+```
+
+`account` 写名称时，第一次会自动搜索并打印「对应编号 gh_xxx / wxid_xxx」并缓存。搜不到就换更精确的名称，或直接把编号填进去。
+
+成本控制：`ingest` 只拉列表，`run` 时才按 `--enrich-top` 补正文，`--max-cost` 可以设硬上限，补过的正文永久缓存。详见「成本」一节。
+
+没配 Key 时，这类信源会被跳过，不影响 RSS 源。
+
+### 不建议再用的方案
+
+- **wewe-rss** 已于 2026-05 归档，依赖的闭源中继已 502，新部署连扫码都走不通。
 - **we-mp-rss** 仍在维护，但容器出现过挖矿报告（issue #485），不建议跑在本机。
 
 ## 定义话题
