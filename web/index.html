@@ -219,7 +219,7 @@ function renderSources() {
   body.innerHTML = state.sources.map(s => `
     <tr>
       <td><strong>${esc(s.name)}</strong><div class="muted">${esc(s.angle || "")}${s.configured ? "" : " · 未填 feed/account"}</div></td>
-      <td>${s.kind === "rss" ? "RSS" : "付费"}</td>
+      <td>${s.configured ? (s.kind === "rss" ? "RSS" : "付费") : "—"}</td>
       <td>${s.count}</td>
       <td>${esc(s.latest || "—")}</td>
       <td>${s.configured ? `<span class="pill ${s.enabled ? "on" : "off"}">${s.enabled ? "启用" : "停用"}</span>` : `<span class="pill off">未配置</span>`}</td>

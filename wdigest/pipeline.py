@@ -134,6 +134,7 @@ def ingest(sources: list[Source], store: Store, timeout: int = 30,
         "near_duplicate": 0,
         "empty": 0,
         "failed": [],
+        "skipped": [],
         "api_calls": 0,
         "spent": 0.0,
     }
@@ -149,7 +150,9 @@ def ingest(sources: list[Source], store: Store, timeout: int = 30,
         if source.kind == "dataxapi":
             if api_client is None or not api_client.enabled:
                 log(f"  跳过「{source.name}」：未配置 DATAXAPI_API_KEY")
-                summary["failed"].append({"source": source.name, "error": "未配置 DATAXAPI_API_KEY"})
+                summary["skipped"].append(
+                    {"source": source.name, "reason": "未配置 DATAXAPI_API_KEY"}
+                )
                 continue
             try:
                 counts = ingest_api(source, store, api_client, pages=api_pages, log=log)
@@ -164,7 +167,7 @@ def ingest(sources: list[Source], store: Store, timeout: int = 30,
 
         if not source.feed:
             log(f"  跳过「{source.name}」：未配置 feed 地址")
-            summary["failed"].append({"source": source.name, "error": "未配置 feed"})
+            summary["skipped"].append({"source": source.name, "reason": "未配置 feed"})
             continue
 
         try:

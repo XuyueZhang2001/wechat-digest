@@ -35,6 +35,8 @@ def cmd_ingest(args) -> int:
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     if summary["api_calls"]:
         print(f"付费接口调用 {summary['api_calls']} 次，花费 ${summary['spent']:.4f}")
+    if summary["skipped"]:
+        print(f"\n{len(summary['skipped'])} 个信源未配置，已跳过。")
     if summary["failed"]:
         print("\n有信源失败，检查 feed 地址、账号编号或网络。")
     store.close()
