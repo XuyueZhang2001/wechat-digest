@@ -71,7 +71,24 @@ Key 只在创建时显示一次，格式是 `sk-` 开头。关了窗口就只能
 
 **3. 写进 `.env`**
 
-`python run.py init` 已经生成了 `.env`，打开填：
+`python run.py init` 已经在项目根目录生成了 `.env`。它是以点开头的隐藏文件，打开方式：
+
+```powershell
+cd wechat-digest
+notepad .env
+```
+
+或者用 VS Code：
+
+```powershell
+code .env
+```
+
+用资源管理器的话，要先打开「查看 → 显示 → 隐藏的项目」，否则看不到。另外确认没有变成 `.env.txt`——Windows 默认隐藏扩展名，很容易多存一层。
+
+文件不存在就先跑 `python run.py init`。
+
+填好后的内容：
 
 ```
 WDIGEST_API_KEY=sk-你复制的key
@@ -79,7 +96,9 @@ WDIGEST_BASE_URL=https://api.deepseek.com/v1
 WDIGEST_MODEL=deepseek-chat
 ```
 
-等号后面直接粘贴，不要加引号。`.env` 已被 `.gitignore` 忽略，不会提交。
+等号后面直接粘贴，不要加引号。用记事本保存时选 UTF-8；就算存成 ANSI，程序也能读，只是中文注释会显示成乱码。
+
+`.env` 已被 `.gitignore` 忽略，不会提交。
 
 **4. 验证**
 

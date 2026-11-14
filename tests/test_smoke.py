@@ -333,6 +333,17 @@ def test_suggest_keywords() -> None:
     assert object_shape["sets"] == [[["甲方"], ["乙方"]]]
 
 
+def test_dotenv_tolerates_non_utf8(tmp: Path) -> None:
+    import os
+
+    from wdigest.env import load_dotenv
+
+    path = tmp / "env_gbk"
+    path.write_bytes("TEST_GBK_KEY=abc123\n# 中文注释\n".encode("gbk"))
+    load_dotenv(path)
+    assert os.environ.get("TEST_GBK_KEY") == "abc123"
+
+
 def test_config_loaders() -> None:
     sources = load_sources(ROOT / "sources.example.toml")
     assert len(sources) >= 6
@@ -355,6 +366,7 @@ def main() -> int:
     test_markdown_render()
     test_toml_roundtrip(tmp_root)
     test_suggest_keywords()
+    test_dotenv_tolerates_non_utf8(tmp_root)
     store = Store(tmp_root / "test.db")
     try:
         seed(store)
